@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Crear usuario{% endblock %}
+
+{% block content %}
+  <h2>Crear usuario</h2>
+
+  <form method="post" id="form-crear-usuario" enctype="multipart/form-data">
+    <div class="grid">
+      <div>
+        <label>Usuario (login) *</label>
+        <input type="text" name="username" value="{{ (form.username if form else '') }}" required>
+      </div>
+
+      <div>
+        <label>Nombre visible</label>
+        <input type="text" name="display_name" value="{{ (form.display_name if form else '') }}">
+      </div>
+
+      <div>
+        <label>Rol *</label>
+        <select name="role" required>
+          {# Si el backend pasa ROLES, lo usamos; si no, mostramos fijo admin/usuario #}
+          {% if roles %}
+            {% for r in roles %}
+              <option value="{{ r }}"
+                {% if form and form.role == r %}selected{% endif %}>
+                {{ 'usuario' if r == 'usuario' else r }}
+              </option>
+            {% endfor %}
+          {% else %}
+            <option value="usuario" {% if form and form.role=='usuario' %}selected{% endif %}>usuario</option>
+            <option value="admin"   {% if form and form.role=='admin'   %}selected{% endif %}>admin</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:8px">
+      <label>Contraseña *</label>
+      <input type="password" name="password" required minlength="4" placeholder="Mínimo 4 caracteres">
+    </div>
+
+    <h3 style="margin-top:14px">Firma del usuario (opcional)</h3>
+
+    <!-- Opción 1: Importar imagen -->
+    <div style="margin-bottom:10px;">
+      <label>Importar firma (imagen PNG/JPG):</label>
+      <input type="file" id="firma_file" accept="image/png,image/jpeg" style="margin-top:4px;">
+      <div id="firma-preview" style="margin-top:6px; display:none;">
+        <img id="firma-preview-img" style="max-width:420px; max-height:130px; border:1px solid #ccc; border-radius:4px;" alt="Vista previa firma">
+        <br>
+        <button type="button" class="btn" id="btn-clear-upload" style="margin-top:4px;">Quitar imagen</button>
+      </div>
+    </div>
+
+    <!-- Opción 2: Dibujar firma -->
+    <div class="sig-label">(O dibuja abajo; se guardará como imagen en base64)</div>
+    <canvas id="pad_user_signature" class="sig-pad" width="420" height="130"></canvas>
+    <div class="sig-actions">
+      <button type="button" class="btn" id="btn-clear-sig">Limpiar</button>
+    </div>
+    <input type="hidden" name="firma_img" id="firma_img">
+
+    <div style="margin-top:12px;">
+      <button class="btn primary" type="submit">Guardar</button>
+      <a class="btn" href="{{ url_for('users.usuarios') }}">Volver</a>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function(){
+      const canvas = document.getElementById('pad_user_signature');
+      const clearBtn = document.getElementById('btn-clear-sig');
+      const hiddenInput = document.getElementById('firma_img');
+      const form = document.getElementById('form-crear-usuario');
+      const fileInput = document.getElementById('firma_file');
+      const previewDiv = document.getElementById('firma-preview');
+      const previewImg = document.getElementById('firma-preview-img');
+      const clearUploadBtn = document.getElementById('btn-clear-upload');
+
+      let uploadedDataUrl = '';
+
+      // --- Importar firma desde archivo ---
+      fileInput.addEventListener('change', function(){
+        const file = this.files[0];
+        if (!file) return;
+        if (!file.type.match(/^image\/(png|jpeg)$/)) {
+          alert('Solo se permiten imágenes PNG o JPG.');
+          this.value = '';
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          alert('La imagen no debe superar 2 MB.');
+          this.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e){
+          uploadedDataUrl = e.target.result;
+          previewImg.src = uploadedDataUrl;
+          previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      clearUploadBtn.addEventListener('click', function(){
+        uploadedDataUrl = '';
+        fileInput.value = '';
+        previewDiv.style.display = 'none';
+        previewImg.src = '';
+      });
+
+      // --- Firma dibujada ---
+      let sigPad = null;
+      if (typeof SignaturePadSimple === 'function') {
+        sigPad = SignaturePadSimple('pad_user_signature');
+        clearBtn.addEventListener('click', function(){ sigPad.clear(); });
+      } else {
+        clearBtn.addEventListener('click', function(){
+          if (canvas.getContext) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        });
+      }
+
+      // --- Al enviar: prioriza imagen importada, sino usa la dibujada ---
+      form.addEventListener('submit', function(){
+        if (uploadedDataUrl) {
+          hiddenInput.value = uploadedDataUrl;
+        } else if (sigPad && !sigPad.isBlank()) {
+          hiddenInput.value = sigPad.toDataURL();
+        } else {
+          hiddenInput.value = '';
+        }
+      });
+    })();
+  </script>
+{% endblock %}
