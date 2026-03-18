@@ -172,7 +172,10 @@ CREATE TABLE IF NOT EXISTS tickets (
     firma_supervisor_nombre         VARCHAR(255),
     estado                          VARCHAR(30) DEFAULT 'abierto',
     finalizado_at                   VARCHAR(50),
-    FOREIGN KEY(created_by) REFERENCES users(id)
+    assigned_to                     INT,
+    assigned_at                     VARCHAR(50),
+    FOREIGN KEY(created_by) REFERENCES users(id),
+    FOREIGN KEY(assigned_to) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 """
 
@@ -190,6 +193,14 @@ def init_db():
         cur.execute("ALTER TABLE tickets ADD COLUMN numero_ticket VARCHAR(50) AFTER created_at")
 
     db.commit()
+
+    # Migración: agregar campos assigned_to y assigned_at si no existen
+    cur.execute("SHOW COLUMNS FROM tickets LIKE %s", ('assigned_to',))
+    if not cur.fetchone():
+        cur.execute("ALTER TABLE tickets ADD COLUMN assigned_to INT AFTER finalizado_at")
+        cur.execute("ALTER TABLE tickets ADD COLUMN assigned_at VARCHAR(50) AFTER assigned_to")
+        cur.execute("ALTER TABLE tickets ADD FOREIGN KEY (assigned_to) REFERENCES users(id)")
+        db.commit()
 
     # Crear admin por defecto si no hay usuarios
     row = db.execute("SELECT COUNT(*) AS c FROM users").fetchone()

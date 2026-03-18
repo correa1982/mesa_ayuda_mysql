@@ -47,6 +47,7 @@
       <th>#</th>
       <th>#ticket</th>
       <th>Creado por</th>
+      <th>Asignado a</th>
       <th>Fecha</th>
       <th>Acciones</th>
     </tr>
@@ -67,6 +68,15 @@
       <td>{{ t.get('numero_ticket') or '-' }}</td>
 
       <td>{{ t['creador'] }}</td>
+
+      <!-- Asignado a -->
+      <td>
+        {% if t.get('asignado_a') %}
+          <span style="background: #e0f2fe; padding: 2px 6px; border-radius: 3px; font-size: 12px;">{{ t['asignado_a'] }}</span>
+        {% else %}
+          <span style="color: #999; font-size: 12px;">—</span>
+        {% endif %}
+      </td>
 
       <!-- Fecha en hora local (Bogotá), ya preparada en la vista como created_local -->
       <td>{{ t['created_local'] }}</td>

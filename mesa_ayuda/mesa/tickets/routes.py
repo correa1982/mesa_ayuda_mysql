@@ -109,9 +109,10 @@ def row_get(row, key, default=None):
 def load_ticket(ticket_id: int):
     db = get_db()
     return db.execute("""
-        SELECT t.*, u.display_name AS creador
+        SELECT t.*, u.display_name AS creador, a.display_name AS asignado_a
         FROM tickets t
         JOIN users u ON t.created_by = u.id
+        LEFT JOIN users a ON t.assigned_to = a.id
         WHERE t.id=?
     """, (ticket_id,)).fetchone()
 
@@ -165,14 +166,17 @@ def tickets_dashboard():
     where = "substr(t.created_at, 1, 10) BETWEEN ? AND ?"
     params = [f_inicio, f_fin]
 
+    # Admin ve todos, otros solo sus tickets (creados o asignados)
     if u['role'] != 'admin':
-        where += " AND t.created_by = ?"
+        where += " AND (t.created_by = ? OR t.assigned_to = ?)"
+        params.append(u['id'])
         params.append(u['id'])
 
     rows = db.execute(f"""
-        SELECT t.*, u.display_name AS creador
+        SELECT t.*, u.display_name AS creador, a.display_name AS asignado_a
         FROM tickets t
         JOIN users u ON t.created_by = u.id
+        LEFT JOIN users a ON t.assigned_to = a.id
         WHERE {where}
         ORDER BY t.created_at DESC
         LIMIT ? OFFSET ?
@@ -358,7 +362,8 @@ def tickets_editar(ticket_id):
         flash('Ticket no encontrado.', 'danger')
         return redirect(url_for('tickets.dashboard'))
 
-    if u['role'] != 'admin' and t['created_by'] != u['id']:
+    # Verificar permisos: admin, creador o asignado
+    if u['role'] != 'admin' and t['created_by'] != u['id'] and t.get('assigned_to') != u['id']:
         flash('No tienes permisos para editar este ticket.', 'danger')
         return redirect(url_for('tickets.dashboard'))
 
@@ -540,10 +545,18 @@ def tickets_ver(ticket_id):
     if not t:
         flash('Ticket no encontrado.', 'danger')
         return redirect(url_for('tickets.dashboard'))
-    if u['role'] != 'admin' and t['created_by'] != u['id']:
+    # Verificar permisos: admin, creador o asignado
+    if u['role'] != 'admin' and t['created_by'] != u['id'] and t.get('assigned_to') != u['id']:
         flash('No tienes permisos para ver este ticket.', 'danger')
         return redirect(url_for('tickets.dashboard'))
-    return render_template('tickets/ver.html', t=t, user=u)
+    
+    # Obtener lista de usuarios para asignación
+    db = get_db()
+    usuarios = db.execute(
+        "SELECT id, display_name FROM users ORDER BY display_name ASC"
+    ).fetchall()
+    
+    return render_template('tickets/ver.html', t=t, user=u, usuarios=usuarios)
 
 @tickets_bp.route('/<int:ticket_id>/eliminar', methods=['POST'], endpoint='eliminar_ticket')
 @login_required
@@ -650,9 +663,10 @@ def tickets_resultados_fechas():
     try:
         db = get_db()
         q = ("""
-            SELECT t.*, u.display_name AS creador
+            SELECT t.*, u.display_name AS creador, a.display_name AS asignado_a
             FROM tickets t
             JOIN users u ON t.created_by = u.id
+            LEFT JOIN users a ON t.assigned_to = a.id
             WHERE substr(t.created_at, 1, 10) BETWEEN ? AND ?
             ORDER BY t.created_at DESC
         """)
@@ -684,9 +698,10 @@ def tickets_descargar_zip():
 
     db = get_db()
     rows = db.execute("""
-        SELECT t.*, u.display_name AS creador
+        SELECT t.*, u.display_name AS creador, a.display_name AS asignado_a
         FROM tickets t
         JOIN users u ON t.created_by = u.id
+        LEFT JOIN users a ON t.assigned_to = a.id
         WHERE t.estado = 'finalizado'
           AND substr(COALESCE(t.finalizado_at, t.created_at), 1, 10) BETWEEN ? AND ?
         ORDER BY 
@@ -784,9 +799,10 @@ def tickets_descargar_csv():
     writer.writerow(headers)
 
     rows = db.execute("""
-        SELECT t.*, u.display_name AS creador
+        SELECT t.*, u.display_name AS creador, a.display_name AS asignado_a
         FROM tickets t
         JOIN users u ON t.created_by = u.id
+        LEFT JOIN users a ON t.assigned_to = a.id
         WHERE date(COALESCE(NULLIF(t.fecha_inicio,''), substr(t.created_at,1,10))) BETWEEN date(?) AND date(?)
         ORDER BY COALESCE(NULLIF(t.fecha_inicio,''), substr(t.created_at,1,10)) ASC, t.id ASC
     """, (f_inicio, f_fin)).fetchall()
@@ -837,7 +853,7 @@ def finalizar_ticket(ticket_id):
     if not t:
         abort(404)
 
-    if u['role'] != 'admin' and t['created_by'] != u['id']:
+    if u['role'] != 'admin' and t['created_by'] != u['id'] and t.get('assigned_to') != u['id']:
         flash('No tienes permisos para finalizar este ticket.', 'danger')
         return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))
 
@@ -963,7 +979,7 @@ def set_nombre_logistica(ticket_id):
     if not t:
         abort(404)
 
-    if u['role'] != 'admin' and t['created_by'] != u['id']:
+    if u['role'] != 'admin' and t['created_by'] != u['id'] and t.get('assigned_to') != u['id']:
         flash('No tienes permisos para modificar este ticket.', 'danger')
         return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))
 
@@ -984,8 +1000,8 @@ def tickets_enviar_logistica(ticket_id):
         flash('Ticket no encontrado.', 'danger')
         return redirect(url_for('tickets.dashboard'))
 
-    # Permisos: admin o creador
-    if u['role'] != 'admin' and t['created_by'] != u['id']:
+    # Permisos: admin, creador o asignado
+    if u['role'] != 'admin' and t['created_by'] != u['id'] and t.get('assigned_to') != u['id']:
         flash('No tienes permisos para enviar este ticket a Logística.', 'danger')
         return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))
 
@@ -1063,4 +1079,55 @@ def tickets_enviar_logistica(ticket_id):
         current_app.logger.exception("Error enviando correo a Logística")
         flash('El ticket está finalizado con firma, pero ocurrió un problema enviando el correo.', 'warning')
 
+    return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))
+
+# =====================================================
+# Asignar ticket a usuario
+# =====================================================
+@tickets_bp.post('/<int:ticket_id>/asignar', endpoint='asignar_ticket')
+@login_required
+def asignar_ticket(ticket_id):
+    """Asigna un ticket a otro usuario (solo admin o creador puede asignar)."""
+    u = current_user()
+    t = load_ticket(ticket_id)
+    
+    if not t:
+        abort(404)
+    
+    # Verificar permisos
+    if u['role'] != 'admin' and t['created_by'] != u['id']:
+        return jsonify(ok=False, error='No tienes permisos para asignar este ticket.'), 403
+    
+    # Obtener usuario a asignar
+    assigned_user_id = request.form.get('assigned_to')
+    if not assigned_user_id:
+        assigned_user_id = None
+    else:
+        try:
+            assigned_user_id = int(assigned_user_id)
+        except (ValueError, TypeError):
+            return jsonify(ok=False, error='ID de usuario inválido.'), 400
+    
+    # Si hay un usuario a asignar, verificar que exista
+    if assigned_user_id:
+        db = get_db()
+        user_exists = db.execute(
+            "SELECT id FROM users WHERE id = %s",
+            (assigned_user_id,)
+        ).fetchone()
+        
+        if not user_exists:
+            return jsonify(ok=False, error='El usuario no existe.'), 404
+    
+    # Actualizar la asignación
+    update_ticket(ticket_id, {
+        'assigned_to': assigned_user_id,
+        'assigned_at': datetime.now(DEFAULT_TZ).isoformat() if assigned_user_id else None
+    })
+    
+    if assigned_user_id:
+        flash('Ticket asignado correctamente.', 'success')
+    else:
+        flash('Asignación del ticket removida.', 'info')
+    
     return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))

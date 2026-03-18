@@ -9,6 +9,27 @@
   <div><strong>Numero de ticket:</strong> {{ t.get('numero_ticket') or '-' }}</div>
 </div>
 
+<!-- Asignación de ticket -->
+<div style="margin: 15px 0; padding: 10px; background: #f0f0f0; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+  <div class="row" style="align-items: center; gap: 15px; flex-wrap: wrap;">
+    <div><strong>Asignado a:</strong> {{ t.get('asignado_a') or '<em style="color:#999;">Sin asignar</em>' }}</div>
+    
+    {% if 'estado' in t.keys() and t['estado'] != 'finalizado' and user and (user['role'] == 'admin' or user['id'] == t['created_by']) %}
+      <form method="post" action="{{ url_for('tickets.asignar_ticket', ticket_id=t['id']) }}" style="display: flex; gap: 8px; align-items: center;">
+        <select name="assigned_to" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;" required>
+          <option value="">-- No asignado --</option>
+          {% for usr in usuarios %}
+            <option value="{{ usr['id'] }}" {% if t.get('assigned_to') == usr['id'] %}selected{% endif %}>
+              {{ usr['display_name'] }}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">Asignar</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
 <h3>Fechas y horas</h3>
 <div class="grid-3">
   <div><label>Fecha de inicio</label><div>{{ t['fecha_inicio'] or '-' }}</div></div>
