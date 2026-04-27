@@ -168,6 +168,17 @@
     }
     .voice-status{ font-size:12px; color:#6b7280; transition:color .2s; }
     .voice-status.active{ color:#ef4444; font-weight:600; }
+
+    /* Botón borrar firma actual */
+    .btn-borrar-firma{
+      margin-top:6px; font-size:13px; padding:4px 10px;
+      background:#fef2f2; color:#dc2626; border:1px solid #fca5a5;
+      border-radius:4px; cursor:pointer; transition:all .2s;
+    }
+    .btn-borrar-firma:hover{
+      background:#fee2e2; border-color:#ef4444;
+    }
+    .firma-actual-wrap{ margin-top:4px; }
   </style>
 
   <h3>Descripción del servicio</h3>
@@ -305,9 +316,13 @@
       <div class="sig-actions">
         <button type="button" class="btn" onclick="clearSig('pad_usuario')">Limpiar</button>
       </div>
+      <input type="hidden" name="borrar_firma_usuario" id="borrar_firma_usuario" value="0">
       {% if mode=='edit' and t['firma_usuario_gestiona_img'] %}
-        <div class="subtle">Firma actual:</div>
-        <img src="{{ t['firma_usuario_gestiona_img'] }}" class="sig-img">
+        <div class="firma-actual-wrap" id="wrap_firma_usuario">
+          <div class="subtle">Firma actual:</div>
+          <img src="{{ t['firma_usuario_gestiona_img'] }}" class="sig-img">
+          <button type="button" class="btn btn-borrar-firma" onclick="borrarFirmaActual('usuario')">🗑️ Borrar firma actual</button>
+        </div>
       {% endif %}
       <input type="hidden" name="firma_usuario_gestiona_img" id="firma_usuario_gestiona_img">
     </div>
@@ -324,9 +339,13 @@
       <div class="sig-actions">
         <button type="button" class="btn" onclick="clearSig('pad_logistica')">Limpiar</button>
       </div>
+      <input type="hidden" name="borrar_firma_logistica" id="borrar_firma_logistica" value="0">
       {% if mode=='edit' and t['firma_logistica_img'] %}
-        <div class="subtle">Firma actual:</div>
-        <img src="{{ t['firma_logistica_img'] }}" class="sig-img">
+        <div class="firma-actual-wrap" id="wrap_firma_logistica">
+          <div class="subtle">Firma actual:</div>
+          <img src="{{ t['firma_logistica_img'] }}" class="sig-img">
+          <button type="button" class="btn btn-borrar-firma" onclick="borrarFirmaActual('logistica')">🗑️ Borrar firma actual</button>
+        </div>
       {% endif %}
       <input type="hidden" name="firma_logistica_img" id="firma_logistica_img">
     </div>
@@ -343,9 +362,13 @@
       <div class="sig-actions">
         <button type="button" class="btn" onclick="clearSig('pad_supervisor')">Limpiar</button>
       </div>
+      <input type="hidden" name="borrar_firma_supervisor" id="borrar_firma_supervisor" value="0">
       {% if mode=='edit' and t['firma_supervisor_img'] %}
-        <div class="subtle">Firma actual:</div>
-        <img src="{{ t['firma_supervisor_img'] }}" class="sig-img">
+        <div class="firma-actual-wrap" id="wrap_firma_supervisor">
+          <div class="subtle">Firma actual:</div>
+          <img src="{{ t['firma_supervisor_img'] }}" class="sig-img">
+          <button type="button" class="btn btn-borrar-firma" onclick="borrarFirmaActual('supervisor')">🗑️ Borrar firma actual</button>
+        </div>
       {% endif %}
       <input type="hidden" name="firma_supervisor_img" id="firma_supervisor_img">
     </div>
@@ -441,17 +464,37 @@
     if (_pads && _pads[canvasId]) _pads[canvasId].clear();
   }
 
+  /* ========= Borrar firma actual (edit mode) ========= */
+  function borrarFirmaActual(tipo){
+    if (!confirm('¿Estás seguro de que quieres borrar esta firma? Se eliminará al guardar.')) return;
+    // Ocultar preview
+    const wrap = document.getElementById('wrap_firma_' + tipo);
+    if (wrap) wrap.style.display = 'none';
+    // Activar flag de borrado
+    const flag = document.getElementById('borrar_firma_' + tipo);
+    if (flag) flag.value = '1';
+  }
+
   // Envío: empaquetar firmas editables en hidden
   document.getElementById('form-ticket').addEventListener('submit', function(){
     const map = {
-      'pad_usuario':     'firma_usuario_gestiona_img',
-      'pad_logistica':   'firma_logistica_img',
-      'pad_supervisor':  'firma_supervisor_img'
+      'pad_usuario':     { hidden: 'firma_usuario_gestiona_img', borrar: 'borrar_firma_usuario' },
+      'pad_logistica':   { hidden: 'firma_logistica_img',        borrar: 'borrar_firma_logistica' },
+      'pad_supervisor':  { hidden: 'firma_supervisor_img',       borrar: 'borrar_firma_supervisor' }
     };
-    Object.entries(map).forEach(([canvasId, hiddenId])=>{
+    Object.entries(map).forEach(([canvasId, ids])=>{
       const pad = _pads && _pads[canvasId];
-      const hid = document.getElementById(hiddenId);
-      if (pad && hid) hid.value = pad.isEmpty() ? '' : pad.toDataURL('image/png');
+      const hid = document.getElementById(ids.hidden);
+      const flag = document.getElementById(ids.borrar);
+      if (pad && hid) {
+        if (!pad.isEmpty()) {
+          hid.value = pad.toDataURL('image/png');
+          // Si dibujó nueva firma, cancelar borrado
+          if (flag) flag.value = '0';
+        } else {
+          hid.value = '';
+        }
+      }
     });
   });
 

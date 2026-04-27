@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, session, send_file, abort, current_app, jsonify
@@ -464,19 +464,32 @@ def tickets_editar(ticket_id):
             if not firma_tecnico_mantenimiento_nombre:
                 firma_tecnico_mantenimiento_nombre = t_curr['firma_tecnico_mantenimiento_nombre']
 
-        # Otras firmas (conserva si no es válida)
-        firma_usuario_gestiona_img = (
-            firma_usuario_gestiona_img_new if _valid_sig_any(firma_usuario_gestiona_img_new)
-            else t_curr['firma_usuario_gestiona_img']
-        )
-        firma_logistica_img = (
-            firma_logistica_img_new if _valid_sig_any(firma_logistica_img_new)
-            else t_curr['firma_logistica_img']
-        )
-        firma_supervisor_img = (
-            firma_supervisor_img_new if _valid_sig_any(firma_supervisor_img_new)
-            else t_curr['firma_supervisor_img']
-        )
+        # Flags de borrado explícito (el usuario pide vaciar la firma)
+        borrar_usuario   = request.form.get('borrar_firma_usuario')   == '1'
+        borrar_logistica = request.form.get('borrar_firma_logistica') == '1'
+        borrar_supervisor = request.form.get('borrar_firma_supervisor') == '1'
+
+        # Otras firmas: nueva dibujada > borrado explícito > conservar anterior
+        if _valid_sig_any(firma_usuario_gestiona_img_new):
+            firma_usuario_gestiona_img = firma_usuario_gestiona_img_new
+        elif borrar_usuario:
+            firma_usuario_gestiona_img = ''
+        else:
+            firma_usuario_gestiona_img = t_curr['firma_usuario_gestiona_img']
+
+        if _valid_sig_any(firma_logistica_img_new):
+            firma_logistica_img = firma_logistica_img_new
+        elif borrar_logistica:
+            firma_logistica_img = ''
+        else:
+            firma_logistica_img = t_curr['firma_logistica_img']
+
+        if _valid_sig_any(firma_supervisor_img_new):
+            firma_supervisor_img = firma_supervisor_img_new
+        elif borrar_supervisor:
+            firma_supervisor_img = ''
+        else:
+            firma_supervisor_img = t_curr['firma_supervisor_img']
 
         # Si alguna firma válida (dataURL nueva) se agrega o cambia -> sellar fecha/hora final
         prev_imgs = {
