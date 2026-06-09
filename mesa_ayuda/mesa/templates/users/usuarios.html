@@ -1,64 +1,344 @@
 {% extends 'base.html' %}
 {% block title %}Usuarios{% endblock %}
 
+{% block extra_styles %}
+<style>
+  /* Contenedor principal y cabecera */
+  .users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .users-title-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .users-title-container h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .users-count-badge {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+  }
+  .users-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  /* Botones modernos */
+  .btn-modern {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .btn-modern.btn-secondary {
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+  .btn-modern.btn-secondary:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .btn-modern.btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+  }
+  .btn-modern.btn-primary:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+  }
+  .btn-modern.btn-primary:active {
+    transform: translateY(0.5px);
+  }
+  /* Tarjeta contenedor */
+  .users-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03);
+    overflow: hidden;
+  }
+  .users-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+  }
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .users-table th {
+    background: #f8fafc;
+    padding: 16px 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .users-table td {
+    padding: 16px 20px;
+    font-size: 0.875rem;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  .users-table tbody tr {
+    transition: background-color 0.15s ease;
+  }
+  .users-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+  .users-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  /* Información del usuario con Avatar */
+  .user-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: #0369a1;
+    font-weight: 700;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    user-select: none;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  }
+  .user-avatar.admin-avatar {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #4f46e5;
+  }
+  .user-details {
+    display: flex;
+    flex-direction: column;
+  }
+  .user-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.925rem;
+  }
+  .user-username {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  /* Badges de Roles */
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: capitalize;
+    border: 1px solid transparent;
+  }
+  .role-badge.admin {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #bfdbfe;
+  }
+  .role-badge.usuario {
+    background-color: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+  .role-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+  /* Botones de acción */
+  .actions-cell {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+  .btn-action svg {
+    width: 16px;
+    height: 16px;
+  }
+  .btn-action.edit:hover {
+    color: #2563eb;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  .btn-action.delete {
+    background: #ffffff;
+  }
+  .btn-action.delete:hover {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    color: #64748b;
+  }
+  .empty-state svg {
+    width: 48px;
+    height: 48px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+  }
+  .empty-state p {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 12px;">
+  <div class="users-header">
+    <div class="users-title-container">
+      <h2>Usuarios</h2>
+      <span class="users-count-badge">{{ usuarios|length }} total</span>
+    </div>
+    <div class="users-actions">
+      <!-- BOTÓN VOLVER -->
+      <a class="btn-modern btn-secondary" href="{{ url_for('tickets.dashboard') }}">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+        Volver
+      </a>
 
-  <h2 style="margin:0;">Usuarios</h2>
-
-  <div style="display:flex; gap:10px; align-items:center;">
-
-    <!-- BOTÓN VOLVER -->
-    <a class="btn" 
-       style="padding:6px 10px; font-size:12px;" 
-       href="{{ url_for('tickets.dashboard') }}">
-      ← Volver
-    </a>
-
-    <!-- BOTÓN CREAR USUARIO -->
-    <a class="btn primary" 
-       style="padding:6px 10px; font-size:12px;" 
-       href="{{ url_for('users.crear_usuario') }}">
-      Crear usuario
-    </a>
-
+      <!-- BOTÓN CREAR USUARIO -->
+      <a class="btn-modern btn-primary" href="{{ url_for('users.crear_usuario') }}">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Crear usuario
+      </a>
+    </div>
   </div>
 
-</div>
+  <div class="users-card">
+    {% if usuarios and usuarios|length > 0 %}
+      <div class="users-table-wrapper">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">ID</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th style="width: 120px; text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for usr in usuarios %}
+            <tr>
+              <td style="font-weight: 600; color: #64748b;">#{{ usr.id }}</td>
+              <td>
+                <div class="user-identity">
+                  {% set initials = usr.display_name[:2] if usr.display_name else usr.username[:2] %}
+                  <div class="user-avatar {% if usr.role == 'admin' %}admin-avatar{% endif %}">
+                    {{ initials }}
+                  </div>
+                  <div class="user-details">
+                    <span class="user-name">{{ usr.display_name or 'Sin Nombre' }}</span>
+                    <span class="user-username">@{{ usr.username }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="role-badge {{ usr.role }}">
+                  {% if usr.role == 'admin' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                    </svg>
+                  {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                  {% endif %}
+                  {{ 'Administrador' if usr.role == 'admin' else 'Usuario' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell" style="justify-content: flex-end;">
+                  <a class="btn-action edit" href="{{ url_for('users.editar_usuario', user_id=usr.id) }}" title="Editar usuario">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.83 18.291a8.95 8.95 0 0 1-3.06 1.983l-2.235.746.746-2.235a8.95 8.95 0 0 1 1.982-3.06l12.44-12.44Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.125 16.862 4.487" />
+                    </svg>
+                  </a>
 
-  {% if usuarios and usuarios|length > 0 %}
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Usuario</th>
-          <th>Nombre</th>
-          <th>Rol</th>
-          <th style="width: 200px;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for usr in usuarios %}
-        <tr>
-          <td>{{ usr.id }}</td>
-          <td>{{ usr.username }}</td>
-          <td>{{ usr.display_name }}</td>
-          <td>{{ usr.role }}</td>
-          <td class="row">
-            <a class="btn" href="{{ url_for('users.editar_usuario', user_id=usr.id) }}">Editar</a>
-
-            <form class="inline" method="post"
-                  action="{{ url_for('users.eliminar_usuario', user_id=usr.id) }}"
-                  onsubmit="return confirm('¿Eliminar definitivamente al usuario {{ usr.username }}?');">
-              <button class="btn danger" type="submit">Eliminar</button>
-            </form>
-
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="subtle">No hay usuarios para mostrar.</p>
-  {% endif %}
+                  <form class="inline" method="post" action="{{ url_for('users.eliminar_usuario', user_id=usr.id) }}" onsubmit="return confirm('¿Eliminar definitivamente al usuario {{ usr.username }}?');">
+                    <button class="btn-action delete" type="submit" title="Eliminar usuario">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      </svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+        <p>No hay usuarios registrados en el sistema.</p>
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}

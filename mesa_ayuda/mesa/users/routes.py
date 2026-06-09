@@ -215,9 +215,17 @@ def eliminar_usuario(user_id):
             flash('No puedes eliminar al último administrador.', 'danger')
             return redirect(url_for('users.usuarios'))
 
-    db.execute("DELETE FROM users WHERE id=?", (user_id,))
-    db.commit()
-    flash('Usuario eliminado correctamente.', 'success')
+    import pymysql
+    try:
+        db.execute("DELETE FROM users WHERE id=?", (user_id,))
+        db.commit()
+        flash('Usuario eliminado correctamente.', 'success')
+    except pymysql.err.IntegrityError:
+        db.rollback()
+        flash('No se puede eliminar el usuario porque tiene tickets o registros asociados.', 'danger')
+    except Exception as e:
+        db.rollback()
+        flash(f'Error al eliminar el usuario: {str(e)}', 'danger')
     return redirect(url_for('users.usuarios'))
 
 # =========================

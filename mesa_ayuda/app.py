@@ -67,4 +67,4 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     # En producción, debug=False
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '5006')), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '5002')), debug=True)
