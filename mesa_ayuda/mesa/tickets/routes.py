@@ -206,10 +206,39 @@ def tickets_dashboard():
 # =====================================================
 # Crear
 # =====================================================
-@tickets_bp.route('/crear_auto', methods=['GET'])
-@login_required
+
+@tickets_bp.route('/check_user', methods=['GET', 'OPTIONS'])
+def check_user():
+    if request.method == 'OPTIONS':
+        from flask import make_response
+        resp = make_response()
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        return resp
+        
+    nombre = request.args.get('nombre', '').strip()
+    from flask import jsonify
+    if not nombre:
+        resp = jsonify({'exists': False})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+        
+    db = get_db()
+    row = db.execute("SELECT id FROM users WHERE REPLACE(LOWER(display_name), ' ', '') = REPLACE(LOWER(?), ' ', '')", (nombre,)).fetchone()
+    resp = jsonify({'exists': bool(row)})
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+@tickets_bp.route('/crear_auto', methods=['GET', 'OPTIONS'])
 def tickets_crear_auto():
+    if request.method == 'OPTIONS':
+        from flask import make_response
+        resp = make_response()
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        return resp
     u = current_user()
+    creator_id = u['id'] if u else 1
     
     # Construimos un objeto 't' con los datos recibidos de la URL
     t = {
@@ -224,12 +253,77 @@ def tickets_crear_auto():
         'equipo_coin': request.args.get('coin', ''),
         'equipo_ram': request.args.get('ram', ''),
         'equipo_disco': request.args.get('disco', ''),
-        'equipo_procesador': request.args.get('procesador', '')
+        'equipo_procesador': request.args.get('procesador', ''),
+        'asignado_a_nombre': request.args.get('asignado_a_nombre', '')
     }
 
     # Valores auxiliares que usa el form (limpiamos 'SEDE ' para que coincida con 'PRINCIPAL' o 'PRADO')
     t['sede'] = t['sede'].upper().replace('SEDE ', '').strip()
     sede_val = t['sede']
+    
+    autosave = request.args.get('autosave')
+    if autosave == '1':
+        from flask import jsonify
+        db = get_db()
+        
+        existing = db.execute("SELECT id FROM tickets WHERE numero_ticket = ?", (t['numero_ticket'],)).fetchone()
+        if existing:
+            resp = jsonify({"error": "Este caso ya ha sido enviado anteriormente."})
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp, 400
+            
+        assigned_to_id = None
+        asignado_a_nombre = t.get('asignado_a_nombre', '').strip()
+        if asignado_a_nombre:
+            row = db.execute("SELECT id FROM users WHERE REPLACE(LOWER(display_name), ' ', '') = REPLACE(LOWER(?), ' ', '')", (asignado_a_nombre,)).fetchone()
+            if row:
+                assigned_to_id = row['id']
+            else:
+                resp = jsonify({"error": f'El usuario "{asignado_a_nombre}" no tiene usuario en mesa ayuda.'})
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                return resp, 400
+                
+        columns = [
+            'created_by','created_at',
+            'numero_ticket',
+            'fecha_inicio','fecha_final','hora_inicio','hora_final',
+            'sede','ubicacion',
+            'soporte_hardware','soporte_Software','soporte_redes',
+            'equipo_equipo','equipo_marca','equipo_modelo','equipo_cod_inventario','equipo_coin','equipo_disco','equipo_ram','equipo_procesador',
+            'servicio_tipo','servicio_otro','falla_asociada',
+            'descripcion_solicitud','descripcion_trabajo',
+            'eval_calidad_servicio','eval_calidad_informacion','eval_oportunidad_respuesta','eval_actitud_tecnico',
+            'firma_usuario_gestiona_img','firma_tecnico_mantenimiento_img','firma_logistica_img','firma_supervisor_img',
+            'firma_usuario_gestiona_nombre','firma_tecnico_mantenimiento_nombre','firma_logistica_nombre','firma_supervisor_nombre',
+            'estado', 'assigned_to', 'assigned_at'
+        ]
+
+        values = (
+            creator_id, datetime.now(DEFAULT_TZ).isoformat(),
+            t['numero_ticket'],
+            '', '', '', '', 
+            sede_val, t['ubicacion'],
+            0, 0, 0, 
+            t['equipo_equipo'], t['equipo_marca'], t['equipo_modelo'], t['equipo_cod_inventario'], t['equipo_coin'], t['equipo_disco'], t['equipo_ram'], t['equipo_procesador'],
+            '', '', '', 
+            t['descripcion_solicitud'], '', 
+            None, None, None, None, 
+            '', '', '', '', 
+            '', '', '', '', 
+            'abierto', assigned_to_id, datetime.now(DEFAULT_TZ).isoformat() if assigned_to_id else None
+        )
+
+        placeholders = ','.join(['?'] * len(columns))
+        query = f"INSERT INTO tickets ({','.join(columns)}) VALUES ({placeholders})"
+        
+        cur = db.cursor()
+        cur.execute(query, values)
+        db.commit()
+        
+        from flask import jsonify
+        resp = jsonify({"success": "Ticket creado"})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
     
     # Renderizamos la misma plantilla de crear, pero en modo 'auto'
     user_firma_img = (u['firma_img'] if u and 'firma_img' in u.keys() else None)
@@ -299,6 +393,14 @@ def tickets_crear():
         # Descripciones
         descripcion_solicitud, _ = _limit_text(request.form.get('descripcion_solicitud',''), MAX_DESC_SOLICITUD)
         descripcion_trabajo, _   = _limit_text(request.form.get('descripcion_trabajo',''),   MAX_DESC_TRABAJO)
+        
+        # Asignado a (desde auto)
+        asignado_a_nombre = request.form.get('asignado_a_nombre', '').strip()
+        assigned_to_id = None
+        if asignado_a_nombre:
+            row = db.execute("SELECT id FROM users WHERE REPLACE(LOWER(display_name), ' ', '') = REPLACE(LOWER(?), ' ', '')", (asignado_a_nombre,)).fetchone()
+            if row:
+                assigned_to_id = row['id']
 
         if not descripcion_solicitud:
             flash('La descripción del servicio es obligatoria.', 'danger')
@@ -354,11 +456,11 @@ def tickets_crear():
             'eval_calidad_servicio','eval_calidad_informacion','eval_oportunidad_respuesta','eval_actitud_tecnico',
             'firma_usuario_gestiona_img','firma_tecnico_mantenimiento_img','firma_logistica_img','firma_supervisor_img',
             'firma_usuario_gestiona_nombre','firma_tecnico_mantenimiento_nombre','firma_logistica_nombre','firma_supervisor_nombre',
-            'estado'
+            'estado', 'assigned_to', 'assigned_at'
         ]
 
         values = (
-            u['id'], datetime.now(DEFAULT_TZ).isoformat(),
+            creator_id, datetime.now(DEFAULT_TZ).isoformat(),
             numero_ticket,
             fecha_inicio, fecha_final, hora_inicio, hora_final,
             sede, ubicacion,
@@ -369,7 +471,7 @@ def tickets_crear():
             eval_calidad_servicio, eval_calidad_informacion, eval_oportunidad_respuesta, eval_actitud_tecnico,
             firma_usuario_gestiona_img, firma_tecnico_mantenimiento_img, firma_logistica_img, firma_supervisor_img,
             firma_usuario_gestiona_nombre, firma_tecnico_mantenimiento_nombre, firma_logistica_nombre, firma_supervisor_nombre,
-            'abierto'
+            'abierto', assigned_to_id, datetime.now(DEFAULT_TZ).isoformat() if assigned_to_id else None
         )
 
         placeholders = ','.join(['?'] * len(columns))

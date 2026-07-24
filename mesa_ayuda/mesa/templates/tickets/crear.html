@@ -14,6 +14,7 @@
 
 <form method="post" id="form-ticket" class="form-ticket is-compact"
       action="{{ url_for('tickets.editar_ticket', ticket_id=t['id']) if mode == 'edit' else url_for('tickets.crear_ticket') }}">
+  <input type="hidden" name="asignado_a_nombre" value="{{ t.get('asignado_a_nombre', '') }}">
 
   {# ===== Token de idempotencia (POST único) ===== #}
   <input type="hidden" name="submit_token" value="{{ submit_token|default('') }}">
