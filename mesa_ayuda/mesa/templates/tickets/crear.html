@@ -13,7 +13,7 @@
 </h2>
 
 <form method="post" id="form-ticket" class="form-ticket is-compact"
-      action="{{ url_for('tickets.editar_ticket', ticket_id=t['id']) if mode in ['edit', 'auto'] else url_for('tickets.crear_ticket') }}">
+      action="{{ url_for('tickets.editar_ticket', ticket_id=t['id']) if mode == 'edit' else url_for('tickets.crear_ticket') }}">
 
   {# ===== Token de idempotencia (POST único) ===== #}
   <input type="hidden" name="submit_token" value="{{ submit_token|default('') }}">

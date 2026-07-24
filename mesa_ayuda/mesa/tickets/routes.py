@@ -227,7 +227,8 @@ def tickets_crear_auto():
         'equipo_procesador': request.args.get('procesador', '')
     }
 
-    # Valores auxiliares que usa el form
+    # Valores auxiliares que usa el form (limpiamos 'SEDE ' para que coincida con 'PRINCIPAL' o 'PRADO')
+    t['sede'] = t['sede'].upper().replace('SEDE ', '').strip()
     sede_val = t['sede']
     
     # Renderizamos la misma plantilla de crear, pero en modo 'auto'
