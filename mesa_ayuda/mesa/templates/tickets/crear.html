@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ 'Editar ticket' if mode=='edit' else 'Crear ticket' }}{% endblock %}
+{% block title %}{{ 'Editar ticket' if mode in ['edit', 'auto'] else 'Crear ticket' }}{% endblock %}
 
 {% block content %}
 
@@ -13,7 +13,7 @@
 </h2>
 
 <form method="post" id="form-ticket" class="form-ticket is-compact"
-      action="{{ url_for('tickets.editar_ticket', ticket_id=t['id']) if mode=='edit' else url_for('tickets.crear_ticket') }}">
+      action="{{ url_for('tickets.editar_ticket', ticket_id=t['id']) if mode in ['edit', 'auto'] else url_for('tickets.crear_ticket') }}">
 
   {# ===== Token de idempotencia (POST único) ===== #}
   <input type="hidden" name="submit_token" value="{{ submit_token|default('') }}">
@@ -23,24 +23,24 @@
   <div class="grid-fechas">
     <div>
       <label>Fecha de inicio</label>
-      <input type="date" name="fecha_inicio" value="{{ t['fecha_inicio'] if mode=='edit' else '' }}">
+      <input type="date" name="fecha_inicio" value="{{ t['fecha_inicio'] if mode in ['edit', 'auto'] else '' }}">
     </div>
     <div>
       <label>Fecha final</label>
-      <input type="date" name="fecha_final" value="{{ t['fecha_final'] if mode=='edit' else '' }}">
+      <input type="date" name="fecha_final" value="{{ t['fecha_final'] if mode in ['edit', 'auto'] else '' }}">
     </div>
     <div>
       <label>Hora de inicio</label>
-      <input type="time" name="hora_inicio" value="{{ t['hora_inicio'] if mode=='edit' else '' }}">
+      <input type="time" name="hora_inicio" value="{{ t['hora_inicio'] if mode in ['edit', 'auto'] else '' }}">
     </div>
     <div>
       <label>Hora final</label>
-      <input type="time" name="hora_final" value="{{ t['hora_final'] if mode=='edit' else '' }}">
+      <input type="time" name="hora_final" value="{{ t['hora_final'] if mode in ['edit', 'auto'] else '' }}">
     </div>
     <div class="numero-ticket-wrap">
       <label>Ingrese numero de ticket</label>
       <input type="number" name="numero_ticket" inputmode="numeric" step="1" min="0"
-             value="{{ t['numero_ticket'] if mode=='edit' and 'numero_ticket' in t.keys() else '' }}">
+             value="{{ t['numero_ticket'] if mode in ['edit', 'auto'] and 'numero_ticket' in t.keys() else '' }}">
     </div>
   </div>
 
@@ -49,7 +49,7 @@
   <div class="row-sede-ubi">
     <div>
       <label>Sede</label>
-      {% set sede_val = t['sede'] if mode=='edit' else '' %}
+      {% set sede_val = t['sede'] if mode in ['edit', 'auto'] else '' %}
       <select name="sede">
         <option value=""></option>
         {% for s in ['PRADO','PRINCIPAL'] %}
@@ -60,16 +60,16 @@
     <div>
       <label>Ubicación</label>
       <input type="text" name="ubicacion" placeholder="Ej: Piso 2 - Consultorio 204"
-             value="{{ t['ubicacion'] if mode=='edit' else '' }}">
+             value="{{ t['ubicacion'] if mode in ['edit', 'auto'] else '' }}">
     </div>
   </div>
 
   <!-- =================== Tipo de soporte =================== -->
   <h3>Tipo de soporte</h3>
   <div class="row">
-    <label><input type="checkbox" name="soporte_hardware" value="1" {% if mode=='edit' and t['soporte_hardware'] %}checked{% endif %}> Hardware</label>
-    <label><input type="checkbox" name="soporte_Software" value="1" {% if mode=='edit' and t['soporte_Software'] %}checked{% endif %}> Software</label>
-    <label><input type="checkbox" name="soporte_redes" value="1" {% if mode=='edit' and t['soporte_redes'] %}checked{% endif %}> Redes</label>
+    <label><input type="checkbox" name="soporte_hardware" value="1" {% if mode in ['edit', 'auto'] and t['soporte_hardware'] %}checked{% endif %}> Hardware</label>
+    <label><input type="checkbox" name="soporte_Software" value="1" {% if mode in ['edit', 'auto'] and t['soporte_Software'] %}checked{% endif %}> Software</label>
+    <label><input type="checkbox" name="soporte_redes" value="1" {% if mode in ['edit', 'auto'] and t['soporte_redes'] %}checked{% endif %}> Redes</label>
   </div>
 
 
@@ -89,64 +89,64 @@
   <div>
     <label>Tipo</label>
     <input type="text" id="inp_equipo" name="equipo_equipo"
-           value="{{ t['equipo_equipo'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_equipo'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div>
     <label>Marca</label>
     <input type="text" id="inp_marca" name="equipo_marca"
-           value="{{ t['equipo_marca'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_marca'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div>
     <label>Modelo</label>
     <input type="text" id="inp_modelo" name="equipo_modelo"
-           value="{{ t['equipo_modelo'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_modelo'] if mode in ['edit', 'auto'] else '' }}">
   </div>
 
   <!-- Fila 2: Cód. inventario | COIN | RAM -->
   <div>
     <label>Cód. inventario</label>
     <input type="text" id="inp_codinv" name="equipo_cod_inventario"
-           value="{{ t['equipo_cod_inventario'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_cod_inventario'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div>
     <label>Coin</label>
     <input type="text" id="inp_coin" name="equipo_coin"
-           value="{{ t['equipo_coin'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_coin'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div>
     <label>Ram</label>
     <input type="text" id="inp_ram" name="equipo_ram" placeholder="Ej: 16 GB"
-           value="{{ t['equipo_ram'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_ram'] if mode in ['edit', 'auto'] else '' }}">
   </div>
 
   <!-- Fila 3: D. Duro | Procesador | (vacío / futuro Serie) -->
   <div>
     <label>Disco Duro</label>
     <input type="text" id="inp_disco" name="equipo_disco" placeholder="Ej: 512 GB SSD"
-           value="{{ t['equipo_disco'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_disco'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div>
     <label>Procesador</label>
     <input type="text" id="inp_procesador" name="equipo_procesador" placeholder="Ej: Intel i5 "
-           value="{{ t['equipo_procesador'] if mode=='edit' else '' }}">
+           value="{{ t['equipo_procesador'] if mode in ['edit', 'auto'] else '' }}">
   </div>
   <div><!-- libre por si luego agregas Serie/GPU/etc. --></div>
 </div>
 
   <!-- =================== Tipo de servicio =================== -->
   <h3>Tipo de servicio</h3>
-  {% set svc = t['servicio_tipo'] if mode=='edit' else '' %}
+  {% set svc = t['servicio_tipo'] if mode in ['edit', 'auto'] else '' %}
   <div class="row">
     <label><input type="radio" name="servicio_tipo" value="Preventivo"  {% if svc=='Preventivo' %}checked{% endif %}> Preventivo</label>
     <label><input type="radio" name="servicio_tipo" value="Correctivo"  {% if svc=='Correctivo' %}checked{% endif %}> Correctivo</label>
     <label><input type="radio" name="servicio_tipo" value="Otro"        {% if svc=='Otro' %}checked{% endif %}> Otro</label>
     <input type="text" name="servicio_otro" placeholder="¿Cuál?" style="max-width:280px"
-           value="{{ t['servicio_otro'] if mode=='edit' else '' }}">
+           value="{{ t['servicio_otro'] if mode in ['edit', 'auto'] else '' }}">
   </div>
 
   <!-- =================== Falla asociada =================== -->
   <h3>Falla asociada</h3>
-  {% set falla = t['falla_asociada'] if mode=='edit' else '' %}
+  {% set falla = t['falla_asociada'] if mode in ['edit', 'auto'] else '' %}
   <div class="row">
     <label><input type="radio" name="falla_asociada" value="Daño"          {% if falla=='Daño' %}checked{% endif %}> Daño</label>
     <label><input type="radio" name="falla_asociada" value="Mal uso"       {% if falla=='Mal uso' %}checked{% endif %}> Mal uso</label>
@@ -189,7 +189,7 @@
       inputmode="text"
       required
       maxlength="{{ MAX_DESC_SOLICITUD }}"
-      oninput="updateCount('descripcion_solicitud')">{{ t['descripcion_solicitud'] if mode=='edit' else '' }}</textarea>
+      oninput="updateCount('descripcion_solicitud')">{{ t['descripcion_solicitud'] if mode in ['edit', 'auto'] else '' }}</textarea>
 
     <div class="voice-controls">
       <button type="button" class="btn btn-voice" data-target="descripcion_solicitud">
@@ -208,7 +208,7 @@
       id="descripcion_trabajo"
       inputmode="text"
       maxlength="{{ MAX_DESC_TRABAJO }}"
-      oninput="updateCount('descripcion_trabajo')">{{ t['descripcion_trabajo'] if mode=='edit' else '' }}</textarea>
+      oninput="updateCount('descripcion_trabajo')">{{ t['descripcion_trabajo'] if mode in ['edit', 'auto'] else '' }}</textarea>
 
     <div class="voice-controls">
       <button type="button" class="btn btn-voice" data-target="descripcion_trabajo">
@@ -223,10 +223,10 @@
   <hr style="margin:18px 0">
 
   <!-- =================== Evaluación del servicio (1 a 5) =================== -->
-  {% set ev1 = t['eval_calidad_servicio'] if mode=='edit' else None %}
-  {% set ev2 = t['eval_calidad_informacion'] if mode=='edit' else None %}
-  {% set ev3 = t['eval_oportunidad_respuesta'] if mode=='edit' else None %}
-  {% set ev4 = t['eval_actitud_tecnico'] if mode=='edit' else None %}
+  {% set ev1 = t['eval_calidad_servicio'] if mode in ['edit', 'auto'] else None %}
+  {% set ev2 = t['eval_calidad_informacion'] if mode in ['edit', 'auto'] else None %}
+  {% set ev3 = t['eval_oportunidad_respuesta'] if mode in ['edit', 'auto'] else None %}
+  {% set ev4 = t['eval_actitud_tecnico'] if mode in ['edit', 'auto'] else None %}
 
   <h3>Evaluación del servicio (1 a 5)</h3>
   <div class="card" style="padding:12px">
@@ -288,7 +288,7 @@
 
       <div class="sig-label">(no editable)</div>
 
-      {% if mode=='edit' and t['firma_tecnico_mantenimiento_img'] %}
+      {% if mode in ['edit', 'auto'] and t['firma_tecnico_mantenimiento_img'] %}
         <div class="subtle" style="margin:6px 0 4px">Firma actual:</div>
         <img src="{{ t['firma_tecnico_mantenimiento_img'] }}" class="sig-img">
         <input type="hidden" name="firma_tecnico_mantenimiento_img" value="{{ t['firma_tecnico_mantenimiento_img'] }}">
@@ -309,7 +309,7 @@
       <label>Firma Del Usuario</label>
       <div class="sig-name">
         <input type="text" name="firma_usuario_gestiona_nombre" placeholder="Nombre del usuario"
-               value="{{ t['firma_usuario_gestiona_nombre'] if mode=='edit' else '' }}">
+               value="{{ t['firma_usuario_gestiona_nombre'] if mode in ['edit', 'auto'] else '' }}">
       </div>
       <div class="sig-label">(firma abajo)</div>
       <canvas id="pad_usuario" class="sig-pad" width="420" height="130"></canvas>
@@ -317,7 +317,7 @@
         <button type="button" class="btn" onclick="clearSig('pad_usuario')">Limpiar</button>
       </div>
       <input type="hidden" name="borrar_firma_usuario" id="borrar_firma_usuario" value="0">
-      {% if mode=='edit' and t['firma_usuario_gestiona_img'] %}
+      {% if mode in ['edit', 'auto'] and t['firma_usuario_gestiona_img'] %}
         <div class="firma-actual-wrap" id="wrap_firma_usuario">
           <div class="subtle">Firma actual:</div>
           <img src="{{ t['firma_usuario_gestiona_img'] }}" class="sig-img">
@@ -332,7 +332,7 @@
       <label>Firma de logística</label>
       <div class="sig-name">
         <input type="text" name="firma_logistica_nombre" placeholder="Nombre de logística"
-               value="{{ t['firma_logistica_nombre'] if mode=='edit' else '' }}">
+               value="{{ t['firma_logistica_nombre'] if mode in ['edit', 'auto'] else '' }}">
       </div>
       <div class="sig-label">(firma abajo)</div>
       <canvas id="pad_logistica" class="sig-pad" width="420" height="130"></canvas>
@@ -340,7 +340,7 @@
         <button type="button" class="btn" onclick="clearSig('pad_logistica')">Limpiar</button>
       </div>
       <input type="hidden" name="borrar_firma_logistica" id="borrar_firma_logistica" value="0">
-      {% if mode=='edit' and t['firma_logistica_img'] %}
+      {% if mode in ['edit', 'auto'] and t['firma_logistica_img'] %}
         <div class="firma-actual-wrap" id="wrap_firma_logistica">
           <div class="subtle">Firma actual:</div>
           <img src="{{ t['firma_logistica_img'] }}" class="sig-img">
@@ -355,7 +355,7 @@
       <label>Firma del técnico que realiza mantenimiento</label>
       <div class="sig-name">
         <input type="text" name="firma_supervisor_nombre" placeholder="Nombre del técnico"
-               value="{{ t['firma_supervisor_nombre'] if mode=='edit' else '' }}">
+               value="{{ t['firma_supervisor_nombre'] if mode in ['edit', 'auto'] else '' }}">
       </div>
       <div class="sig-label">(firma abajo)</div>
       <canvas id="pad_supervisor" class="sig-pad" width="420" height="130"></canvas>
@@ -363,7 +363,7 @@
         <button type="button" class="btn" onclick="clearSig('pad_supervisor')">Limpiar</button>
       </div>
       <input type="hidden" name="borrar_firma_supervisor" id="borrar_firma_supervisor" value="0">
-      {% if mode=='edit' and t['firma_supervisor_img'] %}
+      {% if mode in ['edit', 'auto'] and t['firma_supervisor_img'] %}
         <div class="firma-actual-wrap" id="wrap_firma_supervisor">
           <div class="subtle">Firma actual:</div>
           <img src="{{ t['firma_supervisor_img'] }}" class="sig-img">
@@ -380,7 +380,7 @@
   <p style="margin-top:12px">
     <!-- Guardar -->
     <button class="btn primary" id="btn-guardar" type="submit" data-loading="Guardando…">
-      {{ 'Guardar cambios' if mode=='edit' else 'Guardar' }}
+      {{ 'Guardar cambios' if mode in ['edit', 'auto'] else 'Guardar' }}
     </button>
 
     <!-- Volver -->
@@ -531,7 +531,7 @@
 
   /* ========= Autocompletar fecha/hora de inicio en crear ========= */
   (function autoinitDateTime() {
-    const mode = {{ ('"edit"' if mode=='edit' else '"create"')|safe }};
+    const mode = {{ ('"edit"' if mode in ['edit', 'auto'] else '"create"')|safe }};
     if (mode !== 'create') return;
     const pad2 = n => String(n).padStart(2, '0');
     const d = new Date();

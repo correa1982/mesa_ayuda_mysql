@@ -206,6 +206,44 @@ def tickets_dashboard():
 # =====================================================
 # Crear
 # =====================================================
+@tickets_bp.route('/crear_auto', methods=['GET'])
+@login_required
+def tickets_crear_auto():
+    u = current_user()
+    
+    # Construimos un objeto 't' con los datos recibidos de la URL
+    t = {
+        'numero_ticket': request.args.get('ticket_id', ''),
+        'sede': request.args.get('sede', ''),
+        'descripcion_solicitud': request.args.get('descripcion', ''),
+        'ubicacion': request.args.get('ubicacion', ''),
+        'equipo_equipo': request.args.get('tipo', ''),
+        'equipo_marca': request.args.get('marca', ''),
+        'equipo_modelo': request.args.get('modelo', ''),
+        'equipo_cod_inventario': request.args.get('cod_inventario', ''),
+        'equipo_coin': request.args.get('coin', ''),
+        'equipo_ram': request.args.get('ram', ''),
+        'equipo_disco': request.args.get('disco', ''),
+        'equipo_procesador': request.args.get('procesador', '')
+    }
+
+    # Valores auxiliares que usa el form
+    sede_val = t['sede']
+    
+    # Renderizamos la misma plantilla de crear, pero en modo 'auto'
+    user_firma_img = (u['firma_img'] if u and 'firma_img' in u.keys() else None)
+    return render_template(
+        'tickets/crear.html',
+        mode='auto', 
+        t=t, 
+        user=u, 
+        user_firma_img=user_firma_img,
+        sede_val=sede_val,
+        MAX_DESC_SOLICITUD=600, 
+        MAX_DESC_TRABAJO=600
+    )
+
+# =====================================================
 @tickets_bp.route('/crear', methods=['GET', 'POST'], endpoint='crear_ticket')
 @login_required
 def tickets_crear():
