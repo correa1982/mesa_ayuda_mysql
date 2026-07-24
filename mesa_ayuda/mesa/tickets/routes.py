@@ -344,6 +344,7 @@ def tickets_crear_auto():
 def tickets_crear():
     db = get_db()
     u = current_user()
+    creator_id = u['id'] if u else 1
     MAX_DESC_SOLICITUD = 600
     MAX_DESC_TRABAJO = 600
 
@@ -1286,3 +1287,30 @@ def asignar_ticket(ticket_id):
         flash('Asignación del ticket removida.', 'info')
     
     return redirect(url_for('tickets.ver_ticket', ticket_id=ticket_id))
+
+
+import requests
+
+@tickets_bp.route('/buscar_csharp', methods=['GET'])
+def buscar_csharp():
+    ticket_id = request.args.get('ticket_id')
+    if not ticket_id:
+        return jsonify({'error': 'Falta ticket_id'}), 400
+        
+    try:
+        # Peticion servidor a servidor (evita CORS y problemas de IP)
+        resp = requests.get(f"http://127.0.0.1:5000/Casos/GetTicketInfo/{ticket_id}", timeout=5)
+        
+        if resp.status_code == 200:
+            return jsonify(resp.json())
+        elif resp.status_code == 404:
+            return jsonify({'error': 'El ticket no existe.'}), 404
+        elif resp.status_code == 400:
+            # Ticket cerrado
+            return jsonify(resp.json()), 400
+        else:
+            return jsonify({'error': f'Error {resp.status_code} desde C#'}), resp.status_code
+            
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'No se pudo conectar a C# en 127.0.0.1:5000. Error: {str(e)}'}), 500
+

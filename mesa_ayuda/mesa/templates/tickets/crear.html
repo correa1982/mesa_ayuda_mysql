@@ -38,10 +38,13 @@
       <label>Hora final</label>
       <input type="time" name="hora_final" value="{{ t['hora_final'] if mode in ['edit', 'auto'] else '' }}">
     </div>
-    <div class="numero-ticket-wrap">
+    <div class="numero-ticket-wrap" style="display: flex; flex-direction: column;">
       <label>Ingrese numero de ticket</label>
-      <input type="number" name="numero_ticket" inputmode="numeric" step="1" min="0"
-             value="{{ t['numero_ticket'] if mode in ['edit', 'auto'] and 'numero_ticket' in t.keys() else '' }}">
+      <div style="display: flex; gap: 5px;">
+        <input type="number" name="numero_ticket" id="numero_ticket_input" inputmode="numeric" step="1" min="0" style="flex: 1;"
+               value="{{ t['numero_ticket'] if mode in ['edit', 'auto'] and 'numero_ticket' in t.keys() else '' }}">
+        <button type="button" id="btnBuscarTicket" style="padding: 5px 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px;">Buscar</button>
+      </div>
     </div>
   </div>
 
@@ -824,4 +827,90 @@ document.getElementById('btn_limpiar_inventario')?.addEventListener('click', ()=
 });
 </script>
 
+<script>
+document.getElementById('btnBuscarTicket')?.addEventListener('click', function() {
+    var ticketId = document.getElementById('numero_ticket_input').value;
+    if (!ticketId) {
+        alert("Por favor ingrese un número de ticket.");
+        return;
+    }
+    
+    // Llamar al backend de Python para que él haga la petición a C# (evita problemas de IP y CORS)
+    var url = "/tickets/buscar_csharp?ticket_id=" + ticketId;
+    
+    fetch(url)
+        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(result => {
+            if (result.status >= 400) {
+                alert(result.body.error || "Ocurrió un error al buscar el ticket.");
+            } else {
+                var data = result.body;
+                
+                // Rellenar campos si existen
+                if (data.sede) {
+                    var selSede = document.querySelector('select[name="sede"]');
+                    if (selSede) {
+                        var sedeUpper = data.sede.toUpperCase();
+                        if (sedeUpper.includes('PRINCIPAL')) {
+                            selSede.value = 'PRINCIPAL';
+                        } else if (sedeUpper.includes('PRADO')) {
+                            selSede.value = 'PRADO';
+                        } else {
+                            selSede.value = data.sede;
+                        }
+                    }
+                }
+                if (data.descripcion) {
+                    var txtDesc = document.querySelector('textarea[name="descripcion_solicitud"]');
+                    if (txtDesc) {
+                        txtDesc.value = data.descripcion;
+                        txtDesc.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+                if (data.ubicacion) {
+                    var inpUbi = document.querySelector('input[name="ubicacion"]');
+                    if (inpUbi) inpUbi.value = data.ubicacion;
+                }
+                if (data.tipo) {
+                    var inpEquipo = document.getElementById('inp_equipo');
+                    if (inpEquipo) inpEquipo.value = data.tipo;
+                }
+                if (data.marca) {
+                    var inpMarca = document.getElementById('inp_marca');
+                    if (inpMarca) inpMarca.value = data.marca;
+                }
+                if (data.modelo) {
+                    var inpModelo = document.getElementById('inp_modelo');
+                    if (inpModelo) inpModelo.value = data.modelo;
+                }
+                if (data.cod_inventario) {
+                    var inpCodinv = document.getElementById('inp_codinv');
+                    if (inpCodinv) inpCodinv.value = data.cod_inventario;
+                }
+                if (data.coin) {
+                    var inpCoin = document.getElementById('inp_coin');
+                    if (inpCoin) inpCoin.value = data.coin;
+                }
+                if (data.ram) {
+                    var inpRam = document.getElementById('inp_ram');
+                    if (inpRam) inpRam.value = data.ram;
+                }
+                if (data.disco) {
+                    var inpDisco = document.getElementById('inp_disco');
+                    if (inpDisco) inpDisco.value = data.disco;
+                }
+                if (data.procesador) {
+                    var inpProc = document.getElementById('inp_procesador');
+                    if (inpProc) inpProc.value = data.procesador;
+                }
+                
+                alert("Información del ticket cargada exitosamente.");
+            }
+        })
+        .catch(err => {
+            console.error("Error al conectar con C#:", err);
+            alert("No se pudo conectar con el sistema principal (C#). Verifica que esté en ejecución en el puerto 5000.");
+        });
+});
+</script>
 {% endblock %}
