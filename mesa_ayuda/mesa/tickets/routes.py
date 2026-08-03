@@ -409,6 +409,7 @@ def tickets_crear():
             return render_template(
                 'tickets/crear.html',
                 mode='create', user=u, user_firma_img=user_firma_img,
+                t={},
                 MAX_DESC_SOLICITUD=MAX_DESC_SOLICITUD, MAX_DESC_TRABAJO=MAX_DESC_TRABAJO
             )
 
@@ -421,6 +422,7 @@ def tickets_crear():
                 return render_template(
                     'tickets/crear.html',
                     mode='create', user=u, user_firma_img=user_firma_img,
+                    t={},
                     MAX_DESC_SOLICITUD=MAX_DESC_SOLICITUD, MAX_DESC_TRABAJO=MAX_DESC_TRABAJO
                 )
 
