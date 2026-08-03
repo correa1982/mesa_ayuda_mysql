@@ -6,3 +6,13 @@ Press CTRL+C to quit
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 109-927-250
+ * Detected change in 'D:\\GITHUB\\mesa_ayuda_mysql\\mesa_ayuda\\mesa\\tickets\\routes.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 109-927-250
+172.26.107.54 - - [03/Aug/2026 18:16:28] "GET /tickets/crear HTTP/1.1" 302 -
+ * Detected change in 'D:\\GITHUB\\mesa_ayuda_mysql\\mesa_ayuda\\mesa\\tickets\\routes.py', reloading
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 109-927-250
+172.26.107.54 - - [03/Aug/2026 18:17:23] "GET / HTTP/1.1" 302 -
