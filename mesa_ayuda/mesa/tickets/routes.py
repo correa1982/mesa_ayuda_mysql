@@ -412,6 +412,18 @@ def tickets_crear():
                 MAX_DESC_SOLICITUD=MAX_DESC_SOLICITUD, MAX_DESC_TRABAJO=MAX_DESC_TRABAJO
             )
 
+        # Blindaje: no permitir cargar dos veces el mismo número de ticket
+        if numero_ticket:
+            dup = db.execute("SELECT id FROM tickets WHERE numero_ticket = ?", (numero_ticket,)).fetchone()
+            if dup:
+                flash(f'Ya existe un ticket con el número "{numero_ticket}". No se puede cargar dos veces.', 'danger')
+                user_firma_img = (u['firma_img'] if u and 'firma_img' in u.keys() else None)
+                return render_template(
+                    'tickets/crear.html',
+                    mode='create', user=u, user_firma_img=user_firma_img,
+                    MAX_DESC_SOLICITUD=MAX_DESC_SOLICITUD, MAX_DESC_TRABAJO=MAX_DESC_TRABAJO
+                )
+
         # Evaluaciones
         eval_calidad_servicio      = to_int_1_5(request.form.get('eval_calidad_servicio'))
         eval_calidad_informacion   = to_int_1_5(request.form.get('eval_calidad_informacion'))
