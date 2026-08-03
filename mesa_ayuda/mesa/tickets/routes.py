@@ -1310,7 +1310,13 @@ def buscar_csharp():
     ticket_id = request.args.get('ticket_id')
     if not ticket_id:
         return jsonify({'error': 'Falta ticket_id'}), 400
-        
+
+    # Blindaje: si el número de ticket ya está cargado, no permitir cargarlo dos veces
+    db = get_db()
+    dup = db.execute("SELECT id FROM tickets WHERE numero_ticket = ?", (ticket_id,)).fetchone()
+    if dup:
+        return jsonify({'error': f'Ya existe un ticket con el número {ticket_id}. No se puede cargar dos veces.'}), 400
+
     try:
         # Peticion servidor a servidor (evita CORS y problemas de IP)
         resp = requests.get(f"http://127.0.0.1:5000/Casos/GetTicketInfo/{ticket_id}", timeout=5)
